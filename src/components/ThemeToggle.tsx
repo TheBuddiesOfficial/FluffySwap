@@ -79,24 +79,23 @@ export const ThemeToggle: React.FC = memo(() => {
               aria-label={`Switch to ${label} theme`}
             >
               {/* Active background indicator */}
-              <AnimatePresence mode="wait">
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTheme"
-                    className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-xl`}
-                    initial={false}
-                    animate={{ 
-                      scale: 1,
-                      opacity: 1
-                    }}
-                    transition={springConfig}
-                    style={{ 
-                      willChange: 'transform, opacity',
-                      boxShadow: `0 4px 12px ${shadow}`
-                    }}
-                  />
-                )}
-              </AnimatePresence>
+              {isActive && (
+                <motion.div
+                  layoutId="activeTheme"
+                  className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-xl`}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ 
+                    scale: 1,
+                    opacity: 1
+                  }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={springConfig}
+                  style={{ 
+                    willChange: 'transform, opacity',
+                    boxShadow: `0 4px 12px ${shadow}`
+                  }}
+                />
+              )}
               
               {/* Icon */}
               <motion.div
@@ -143,39 +142,39 @@ export const ThemeToggle: React.FC = memo(() => {
       </motion.div>
 
       {/* Simplified tooltip */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={fastSpring}
-        className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900/90 dark:bg-gray-100/90 text-white dark:text-gray-900 text-xs rounded-lg shadow-md whitespace-nowrap pointer-events-none backdrop-blur-sm"
-        style={{ willChange: 'transform, opacity' }}
-      >
-        <motion.span
-          key={theme}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.15 }}
+      {!isTransitioning && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={fastSpring}
+          className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900/90 dark:bg-gray-100/90 text-white dark:text-gray-900 text-xs rounded-lg shadow-md whitespace-nowrap pointer-events-none backdrop-blur-sm"
+          style={{ willChange: 'transform, opacity' }}
         >
-          {themes.find(t => t.value === theme)?.label} Mode
-        </motion.span>
-        
-        {/* Tooltip arrow */}
-        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900/90 dark:bg-gray-100/90 rotate-45" />
-      </motion.div>
+          <motion.span
+            key={theme}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+          >
+            {themes.find(t => t.value === theme)?.label} Mode
+          </motion.span>
+          
+          {/* Tooltip arrow */}
+          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900/90 dark:bg-gray-100/90 rotate-45" />
+        </motion.div>
+      )}
 
       {/* Minimal transition overlay */}
-      <AnimatePresence>
-        {isTransitioning && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.8 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 rounded-2xl backdrop-blur-[1px]"
-            transition={{ duration: 0.2 }}
-            style={{ willChange: 'opacity' }}
-          />
-        )}
-      </AnimatePresence>
+      {isTransitioning && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.8 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 rounded-2xl backdrop-blur-[1px]"
+          transition={{ duration: 0.2 }}
+          style={{ willChange: 'opacity' }}
+        />
+      )}
     </div>
   );
 });
