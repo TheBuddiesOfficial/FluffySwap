@@ -31,19 +31,37 @@ export const useTheme = () => {
       root.classList.remove('light', 'dark');
       body.classList.remove('light', 'dark');
       
-      // Add the new theme class
+      // Add the new theme class with smooth transition
       root.classList.add(newResolvedTheme);
       body.classList.add(newResolvedTheme);
       
-      // Update meta theme-color
+      // Update meta theme-color with smooth transition
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
         metaThemeColor.setAttribute('content', newResolvedTheme === 'dark' ? '#1f2937' : '#ffffff');
       }
 
-      // Update body background for smooth transitions
-      body.style.backgroundColor = newResolvedTheme === 'dark' ? '#111827' : '#ffffff';
-      body.style.transition = 'background-color 0.5s ease-in-out';
+      // Enhanced body background transitions
+      body.style.transition = 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+      
+      // Set CSS custom properties for theme-aware styling
+      root.style.setProperty('--theme-transition', '0.5s cubic-bezier(0.4, 0, 0.2, 1)');
+      
+      if (newResolvedTheme === 'dark') {
+        root.style.setProperty('--bg-primary', '#1f2937');
+        root.style.setProperty('--bg-secondary', '#374151');
+        root.style.setProperty('--text-primary', '#f9fafb');
+        root.style.setProperty('--text-secondary', '#d1d5db');
+        root.style.setProperty('--border-color', '#4b5563');
+        root.style.setProperty('--particle-opacity', '0.8');
+      } else {
+        root.style.setProperty('--bg-primary', '#ffffff');
+        root.style.setProperty('--bg-secondary', '#f9fafb');
+        root.style.setProperty('--text-primary', '#111827');
+        root.style.setProperty('--text-secondary', '#6b7280');
+        root.style.setProperty('--border-color', '#e5e7eb');
+        root.style.setProperty('--particle-opacity', '0.6');
+      }
     };
 
     updateTheme();
@@ -58,13 +76,36 @@ export const useTheme = () => {
     };
 
     mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    
+    // Cleanup function
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, [theme]);
+
+  // Enhanced theme setter with transition effects
+  const setThemeWithTransition = (newTheme: Theme) => {
+    // Add a subtle transition effect
+    const body = document.body;
+    body.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    
+    setTheme(newTheme);
+    
+    // Trigger a small animation to indicate theme change
+    setTimeout(() => {
+      body.style.transform = 'scale(1.001)';
+      setTimeout(() => {
+        body.style.transform = 'scale(1)';
+      }, 150);
+    }, 50);
+  };
 
   return {
     theme,
     resolvedTheme,
-    setTheme,
+    setTheme: setThemeWithTransition,
     isDark: resolvedTheme === 'dark',
+    isLight: resolvedTheme === 'light',
+    isSystem: theme === 'system',
   };
 };
