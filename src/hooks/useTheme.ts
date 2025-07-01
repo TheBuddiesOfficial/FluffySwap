@@ -14,6 +14,7 @@ export const useTheme = () => {
 
   useEffect(() => {
     const root = window.document.documentElement;
+    const body = window.document.body;
     
     const updateTheme = () => {
       let newResolvedTheme: 'light' | 'dark';
@@ -26,14 +27,23 @@ export const useTheme = () => {
       
       setResolvedTheme(newResolvedTheme);
       
+      // Remove all theme classes
       root.classList.remove('light', 'dark');
+      body.classList.remove('light', 'dark');
+      
+      // Add the new theme class
       root.classList.add(newResolvedTheme);
+      body.classList.add(newResolvedTheme);
       
       // Update meta theme-color
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
         metaThemeColor.setAttribute('content', newResolvedTheme === 'dark' ? '#1f2937' : '#ffffff');
       }
+
+      // Update body background for smooth transitions
+      body.style.backgroundColor = newResolvedTheme === 'dark' ? '#111827' : '#ffffff';
+      body.style.transition = 'background-color 0.5s ease-in-out';
     };
 
     updateTheme();

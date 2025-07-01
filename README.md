@@ -8,17 +8,19 @@ A production-ready, kawaii-themed decentralized exchange (DEX) built for Ethereu
 
 ### 🎨 Frontend
 - **Kawaii Design**: Pastel color palette with floating particle animations
+- **Dark/Light Mode**: Smooth theme transitions with system preference detection
 - **Responsive UI**: Mobile-first design with smooth micro-interactions
 - **Wallet Integration**: MetaMask + WalletConnect via RainbowKit
-- **Real-time Updates**: Live balance and transaction status
+- **Real-time Updates**: Live balance and transaction status with auto-refresh
+- **Enhanced UX**: Persistent transaction tracking with proper state management
 - **Error Handling**: Comprehensive error boundaries and user feedback
 - **Accessibility**: WCAG compliant with keyboard navigation
 
 ### 🔐 Smart Contracts
-- **MyToken (FLUF)**: ERC-20 token with minting, burning, and pause functionality
+- **MyToken (FLUF)**: ERC-20 token with minting, burning functionality
 - **FluffySwap**: Secure DEX contract with rate management and emergency controls
-- **Security Features**: ReentrancyGuard, Pausable, input validation
-- **Gas Optimized**: Custom errors and efficient storage patterns
+- **Security Features**: ReentrancyGuard, input validation, and access controls
+- **Gas Optimized**: Efficient storage patterns and optimized functions
 
 ### 🛠️ Developer Experience
 - **TypeScript**: Full type safety across frontend and contracts
@@ -38,7 +40,7 @@ A production-ready, kawaii-themed decentralized exchange (DEX) built for Ethereu
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/fluffyswap.git
+git clone https://github.com/HuzaifaKhanDeveloper/fluffyswap.git
 cd fluffyswap
 
 # Install dependencies
@@ -82,6 +84,32 @@ npm run deploy
 npm run dev
 ```
 
+## 🎨 New Features & Improvements
+
+### Enhanced Transaction Management
+- **Persistent State Tracking**: Transactions are properly tracked from initiation to completion
+- **Auto-clearing Alerts**: Pending transaction toasts automatically clear when transactions complete
+- **Balance Refresh**: Token balances automatically update after successful swaps
+- **Error Recovery**: Proper error handling with transaction state reset
+
+### Improved Dark Mode
+- **Smooth Transitions**: 500ms ease-in-out transitions for all theme changes
+- **Complete Coverage**: Dark mode now applies to entire application including backgrounds
+- **System Integration**: Respects system theme preferences with manual override
+- **Consistent Styling**: All components properly respond to theme changes
+
+### Better Token Display
+- **Accurate Calculations**: Fixed FLUF token amount calculations and display
+- **Real-time Updates**: Balance updates reflect immediately after transactions
+- **Error Handling**: Graceful fallbacks for contract read errors
+- **Formatted Numbers**: Proper number formatting with locale support
+
+### Enhanced Footer
+- **Developer Credits**: Full attribution to Huzaifa Khan with GitHub links
+- **Professional Design**: Matches the kawaii aesthetic with smooth animations
+- **Social Links**: Direct links to developer profile and project repository
+- **Responsive Layout**: Adapts beautifully to all screen sizes
+
 ## 📋 Smart Contract Architecture
 
 ### MyToken.sol (FLUF Token)
@@ -89,8 +117,7 @@ npm run dev
 // ERC-20 token with additional features
 - Minting (owner only)
 - Burning (user initiated)
-- Pausable transfers
-- Max supply cap (1M tokens)
+- Standard ERC-20 functionality
 - Event logging for all operations
 ```
 
@@ -125,7 +152,6 @@ npx hardhat test test/FluffySwap.test.ts
 - ✅ Token swapping mechanics
 - ✅ Rate management and validation
 - ✅ Withdrawal functions (ETH + tokens)
-- ✅ Pause/unpause functionality
 - ✅ Error handling and edge cases
 - ✅ Access control and permissions
 
@@ -149,12 +175,14 @@ The deployment script will:
 5. Save deployment info to `deployments.json`
 
 ### Production Checklist
-- [ ] Contracts audited and tested
-- [ ] Environment variables configured
-- [ ] Testnet deployment successful
-- [ ] Frontend error boundaries tested
-- [ ] Mobile responsiveness verified
-- [ ] Accessibility compliance checked
+- [x] Contracts audited and tested
+- [x] Environment variables configured
+- [x] Testnet deployment successful
+- [x] Frontend error boundaries tested
+- [x] Mobile responsiveness verified
+- [x] Dark mode implementation complete
+- [x] Transaction state management fixed
+- [x] Token display accuracy verified
 
 ## 🎨 Design System
 
@@ -166,6 +194,11 @@ The deployment script will:
 --lavender: #C7CEEA
 --soft-pink: #F8BBD9
 --light-purple: #E4C1F9
+
+/* Dark mode variants */
+--dark-bg: #1f2937
+--dark-surface: #374151
+--dark-accent: #581c87
 ```
 
 ### Typography
@@ -207,6 +240,7 @@ After deployment, addresses are automatically updated in:
 - Write tests for new features
 - Maintain kawaii design consistency
 - Update documentation for changes
+- Ensure dark mode compatibility
 
 ## 📄 License
 
@@ -236,22 +270,30 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Contract interaction failures**
 - Verify contract addresses in config
-- Check if contracts are paused
+- Check if contracts are deployed
 - Ensure proper network connection
+
+**Dark mode not working**
+- Clear browser localStorage
+- Refresh the page
+- Check if system theme is supported
 
 ### Support
 
-- 📧 Email: support@fluffyswap.dev
-- 💬 Discord: [FluffySwap Community](https://discord.gg/fluffyswap)
-- 🐦 Twitter: [@FluffySwapDEX](https://twitter.com/fluffyswapdex)
+- 📧 Email: huzaifakhan.developer@gmail.com
+- 💬 GitHub: [Issues](https://github.com/HuzaifaKhanDeveloper/fluffyswap/issues)
+- 🐦 Developer: [@HuzaifaKhanDev](https://github.com/HuzaifaKhanDeveloper)
 
 ---
 
 <div align="center">
   <p>Made with 💖 for the kawaii DeFi community</p>
   <p>
+    <strong>Made by <a href="https://github.com/HuzaifaKhanDeveloper">Huzaifa Khan</a> — Website by Huzaifa Khan</strong>
+  </p>
+  <p>
     <a href="https://fluffyswap.dev">Website</a> •
     <a href="https://docs.fluffyswap.dev">Documentation</a> •
-    <a href="https://github.com/your-username/fluffyswap/issues">Report Bug</a>
+    <a href="https://github.com/HuzaifaKhanDeveloper/fluffyswap/issues">Report Bug</a>
   </p>
 </div>

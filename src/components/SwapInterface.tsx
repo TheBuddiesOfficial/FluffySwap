@@ -16,6 +16,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
   const [flufAmount, setFlufAmount] = useState('');
   const [isCalculating, setIsCalculating] = useState(false);
   const [inputError, setInputError] = useState<string>('');
+  const [transactionHash, setTransactionHash] = useState<string>('');
 
   const { address, isConnected } = useAccount();
 
@@ -29,7 +30,8 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
   const { 
     data: flufBalance, 
     isError: isFlufBalanceError,
-    error: flufBalanceError 
+    error: flufBalanceError,
+    refetch: refetchFlufBalance
   } = useContractRead({
     address: CONTRACTS.MyToken,
     abi: MY_TOKEN_ABI,
@@ -61,7 +63,8 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
   // Get contract liquidity
   const { 
     data: contractLiquidity,
-    isError: isLiquidityError 
+    isError: isLiquidityError,
+    refetch: refetchLiquidity
   } = useContractRead({
     address: CONTRACTS.FluffySwap,
     abi: FLUFFY_SWAP_ABI,
@@ -76,6 +79,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
     data: swapData,
     isLoading: isSwapLoading,
     error: swapError,
+    reset: resetSwap
   } = useContractWrite({
     address: CONTRACTS.FluffySwap,
     abi: FLUFFY_SWAP_ABI,
@@ -85,18 +89,73 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
   // Wait for transaction
   const { 
     isLoading: isTransactionLoading, 
-    isSuccess: isTransactionSuccess 
+    isSuccess: isTransactionSuccess,
+    isError: isTransactionError
   } = useWaitForTransaction({
     hash: swapData?.hash,
-    onSuccess: () => {
-      toast.success('Swap completed successfully! 🎉');
+    onSuccess: (data) => {
+      toast.dismiss(); // Clear any pending toasts
+      toast.success('Swap completed successfully! 🎉', {
+        duration: 5000,
+        style: {
+          background: 'linear-gradient(135deg, #10B981, #059669)',
+          color: 'white',
+          fontWeight: '600',
+          borderRadius: '12px',
+          padding: '16px',
+        },
+      });
       setEthAmount('');
       setFlufAmount('');
+      setTransactionHash('');
+      
+      // Refetch balances after successful transaction
+      setTimeout(() => {
+        refetchFlufBalance();
+        refetchLiquidity();
+      }, 2000);
     },
     onError: (error) => {
-      toast.error(`Transaction failed: ${error.message}`);
+      toast.dismiss(); // Clear any pending toasts
+      toast.error(`Transaction failed: ${error.message}`, {
+        duration: 5000,
+        style: {
+          background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+          color: 'white',
+          fontWeight: '600',
+          borderRadius: '12px',
+          padding: '16px',
+        },
+      });
+      setTransactionHash('');
     },
   });
+
+  // Handle transaction state changes
+  useEffect(() => {
+    if (swapData?.hash && !transactionHash) {
+      setTransactionHash(swapData.hash);
+      toast.dismiss(); // Clear any existing toasts
+      toast.loading('Transaction pending...', {
+        id: 'pending-transaction',
+        duration: Infinity,
+        style: {
+          background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+          color: 'white',
+          fontWeight: '600',
+          borderRadius: '12px',
+          padding: '16px',
+        },
+      });
+    }
+  }, [swapData?.hash, transactionHash]);
+
+  // Clear pending toast when transaction completes or fails
+  useEffect(() => {
+    if (isTransactionSuccess || isTransactionError) {
+      toast.dismiss('pending-transaction');
+    }
+  }, [isTransactionSuccess, isTransactionError]);
 
   // Calculate FLUF amount when ETH amount changes
   useEffect(() => {
@@ -167,6 +226,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
     if (!isConnected || !ethAmount || inputError) return;
 
     try {
+      resetSwap(); // Reset any previous transaction state
       executeSwap({
         value: parseEther(ethAmount),
       });
@@ -190,9 +250,23 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
   const canSwap = isConnected && ethAmount && !inputError && !isLoading;
   const hasLiquidity = contractLiquidity && Number(formatEther(contractLiquidity)) > 0;
 
+  // Format FLUF balance for display
+  const formatFlufBalance = (balance: bigint | undefined): string => {
+    if (!balance) return '0';
+    try {
+      return parseFloat(formatEther(balance)).toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    } catch (error) {
+      console.error('Error formatting FLUF balance:', error);
+      return '0';
+    }
+  };
+
   return (
     <motion.div
-      className={`bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700 ${className}`}
+      className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/30 dark:border-gray-700/30 transition-all duration-500 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -200,7 +274,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
       {/* Header */}
       <div className="text-center mb-8">
         <motion.div
-          className="inline-flex items-center gap-3 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 px-6 py-3 rounded-full mb-6 border border-pink-200 dark:border-pink-800"
+          className="inline-flex items-center gap-3 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 px-6 py-3 rounded-full mb-6 border border-pink-200 dark:border-pink-800 transition-all duration-500"
           whileHover={{ scale: 1.02 }}
         >
           <TokenIcon symbol="FLUF" size={24} className="text-pink-500" animated />
@@ -210,10 +284,10 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
           <TokenIcon symbol="ETH" size={24} className="text-blue-500" />
         </motion.div>
         
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-500">
           Swap ETH for FLUF
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400 transition-colors duration-500">
           Trade Ethereum for FluffyTokens instantly
         </p>
       </div>
@@ -225,7 +299,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl"
+            className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl transition-all duration-500"
           >
             <div className="flex items-start gap-3">
               <AlertTriangle size={20} className="text-red-500 mt-0.5" />
@@ -254,7 +328,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
       <div className="space-y-6">
         {/* ETH Input */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors duration-500">
             You Pay
           </label>
           <div className={`relative rounded-2xl border-2 transition-all duration-300 ${
@@ -262,7 +336,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
               ? 'border-red-300 dark:border-red-600' 
               : 'border-gray-200 dark:border-gray-600 focus-within:border-pink-300 dark:focus-within:border-pink-500'
           }`}>
-            <div className="flex items-center p-4">
+            <div className="flex items-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-2xl transition-all duration-500">
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center">
                   <TokenIcon symbol="ETH" size={20} className="text-white" />
@@ -273,11 +347,11 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
                   onChange={(e) => setEthAmount(e.target.value)}
                   placeholder="0.0"
                   disabled={isLoading}
-                  className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white"
+                  className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white transition-colors duration-500"
                   step="0.001"
                   min="0"
                 />
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full transition-all duration-500">
                   ETH
                 </span>
               </div>
@@ -287,7 +361,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
                   whileTap={{ scale: 0.95 }}
                   onClick={handleMaxClick}
                   disabled={isLoading}
-                  className="ml-3 px-3 py-1 text-sm font-medium text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-900/30 rounded-full hover:bg-pink-200 dark:hover:bg-pink-900/50 transition-colors disabled:opacity-50"
+                  className="ml-3 px-3 py-1 text-sm font-medium text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-900/30 rounded-full hover:bg-pink-200 dark:hover:bg-pink-900/50 transition-all duration-200 disabled:opacity-50"
                 >
                   MAX
                 </motion.button>
@@ -297,7 +371,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
           
           {/* Balance and Error */}
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-gray-500 dark:text-gray-400 transition-colors duration-500">
               {ethBalance ? `Balance: ${parseFloat(formatEther(ethBalance.value)).toFixed(4)} ETH` : ''}
             </span>
             {inputError && (
@@ -322,10 +396,10 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
 
         {/* FLUF Output */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors duration-500">
             You Receive
           </label>
-          <div className="rounded-2xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+          <div className="rounded-2xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 transition-all duration-500">
             <div className="flex items-center p-4">
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-purple-500 flex items-center justify-center">
@@ -338,12 +412,12 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
                       <span className="text-gray-400 dark:text-gray-500">Calculating...</span>
                     </div>
                   ) : (
-                    <span className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
+                    <span className="text-2xl font-semibold text-gray-700 dark:text-gray-300 transition-colors duration-500">
                       {flufAmount || '0.0'}
                     </span>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-full transition-all duration-500">
                   FLUF
                 </span>
               </div>
@@ -351,11 +425,11 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
           </div>
           
           {/* FLUF Balance */}
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-500">
             {isFlufBalanceError ? (
               'Unable to load FLUF balance'
             ) : flufBalance ? (
-              `Balance: ${parseFloat(formatEther(flufBalance)).toLocaleString()} FLUF`
+              `Balance: ${formatFlufBalance(flufBalance)} FLUF`
             ) : (
               'Balance: 0 FLUF'
             )}
@@ -403,14 +477,14 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
         </motion.button>
 
         {/* Transaction Hash */}
-        {swapData?.hash && (
+        {transactionHash && (
           <div className="text-center">
             <motion.a
-              href={`https://sepolia.etherscan.io/tx/${swapData.hash}`}
+              href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
-              className="inline-flex items-center gap-2 text-sm text-pink-600 dark:text-pink-400 hover:text-pink-800 dark:hover:text-pink-300 underline"
+              className="inline-flex items-center gap-2 text-sm text-pink-600 dark:text-pink-400 hover:text-pink-800 dark:hover:text-pink-300 underline transition-colors duration-200"
             >
               View Transaction
               <ArrowDownUp size={14} />
@@ -420,12 +494,12 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ className = '' }) 
 
         {/* Swap Info */}
         <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-500">
             <span>Min: {SWAP_LIMITS.MIN_ETH} ETH</span>
             <span>•</span>
             <span>Max: {SWAP_LIMITS.MAX_ETH} ETH</span>
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-gray-400 dark:text-gray-500 transition-colors duration-500">
             Network fees apply • All transactions are final
           </p>
         </div>

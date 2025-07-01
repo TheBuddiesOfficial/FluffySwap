@@ -11,6 +11,7 @@ import { SwapInterface } from './components/SwapInterface';
 import { PoolInfo } from './components/PoolInfo';
 import { WalletInfo } from './components/WalletInfo';
 import { FloatingParticles } from './components/FloatingParticles';
+import { Footer } from './components/Footer';
 
 import '@rainbow-me/rainbowkit/styles.css';
 
@@ -40,12 +41,12 @@ const AppContent: React.FC = () => {
       chains={chains} 
       theme={isDark ? customDarkTheme : customLightTheme}
     >
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-cyan-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-cyan-900/20 transition-colors duration-300">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-cyan-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-cyan-900/20 transition-all duration-500">
         {/* Enhanced Multi-Layer Background */}
         <div className="absolute inset-0">
           {/* Base gradient */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-pink-100 via-purple-50 to-cyan-100 dark:from-gray-800 dark:via-purple-900/30 dark:to-cyan-900/30"
+            className="absolute inset-0 bg-gradient-to-br from-pink-100 via-purple-50 to-cyan-100 dark:from-gray-800 dark:via-purple-900/30 dark:to-cyan-900/30 transition-all duration-500"
             animate={{
               background: isDark ? [
                 'linear-gradient(135deg, #1f2937, #581c87, #164e63)',
@@ -104,7 +105,7 @@ const AppContent: React.FC = () => {
 
           {/* Subtle grid pattern */}
           <div 
-            className="absolute inset-0 opacity-5"
+            className="absolute inset-0 opacity-5 dark:opacity-10 transition-opacity duration-500"
             style={{
               backgroundImage: `
                 linear-gradient(rgba(168, 85, 247, 0.1) 1px, transparent 1px),
@@ -140,49 +141,8 @@ const AppContent: React.FC = () => {
           </div>
         </main>
 
-        {/* Enhanced Footer */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="relative z-10 mt-16 pb-8"
-        >
-          <div className="container mx-auto px-4 text-center">
-            <motion.div 
-              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 max-w-2xl mx-auto border border-white/30 dark:border-gray-700/30 shadow-xl"
-              whileHover={{
-                scale: 1.02,
-                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.1)'
-              }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                FluffySwap is a kawaii-themed decentralized exchange built for the Ethereum Sepolia testnet.
-                Trade ETH for FLUF tokens with adorable animations and secure smart contracts.
-              </p>
-              <div className="flex justify-center gap-6 text-xs text-gray-400 dark:text-gray-500">
-                <motion.span 
-                  whileHover={{ color: '#6366f1' }}
-                  className="cursor-default"
-                >
-                  • Sepolia Testnet Only
-                </motion.span>
-                <motion.span 
-                  whileHover={{ color: '#8b5cf6' }}
-                  className="cursor-default"
-                >
-                  • Educational Purpose
-                </motion.span>
-                <motion.span 
-                  whileHover={{ color: '#06b6d4' }}
-                  className="cursor-default"
-                >
-                  • Open Source
-                </motion.span>
-              </div>
-            </motion.div>
-          </div>
-        </motion.footer>
+        {/* Footer */}
+        <Footer />
 
         {/* Enhanced Toast Notifications */}
         <Toaster
