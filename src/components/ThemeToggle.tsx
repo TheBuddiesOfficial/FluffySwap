@@ -1,192 +1,183 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 
-export const ThemeToggle: React.FC = () => {
+// Optimized spring configuration
+const springConfig = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 25,
+  mass: 0.8
+};
+
+const fastSpring = {
+  type: "spring" as const,
+  stiffness: 400,
+  damping: 30,
+  mass: 0.6
+};
+
+export const ThemeToggle: React.FC = memo(() => {
   const { theme, setTheme, isDark, isTransitioning } = useTheme();
 
-  const themes = [
+  const themes = useMemo(() => [
     { 
       value: 'light', 
       icon: Sun, 
       label: 'Light',
-      color: 'from-yellow-400 via-orange-400 to-red-400',
-      shadowColor: 'rgba(251, 191, 36, 0.4)'
+      gradient: 'from-amber-400 to-orange-500',
+      shadow: 'rgba(245, 158, 11, 0.3)'
     },
     { 
       value: 'dark', 
       icon: Moon, 
       label: 'Dark',
-      color: 'from-purple-500 via-indigo-600 to-blue-700',
-      shadowColor: 'rgba(139, 92, 246, 0.4)'
+      gradient: 'from-violet-500 to-purple-600',
+      shadow: 'rgba(139, 92, 246, 0.3)'
     },
     { 
       value: 'system', 
       icon: Monitor, 
       label: 'System',
-      color: 'from-gray-500 via-gray-600 to-gray-700',
-      shadowColor: 'rgba(107, 114, 128, 0.4)'
+      gradient: 'from-slate-500 to-slate-600',
+      shadow: 'rgba(100, 116, 139, 0.3)'
     },
-  ] as const;
+  ] as const, []);
+
+  const handleThemeChange = (newTheme: string) => {
+    if (!isTransitioning) {
+      setTheme(newTheme);
+    }
+  };
 
   return (
     <div className="relative">
       <motion.div 
-        className="flex items-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-1.5 border border-gray-200/60 dark:border-gray-700/60 shadow-xl transition-all duration-500"
-        whileHover={{ 
-          scale: 1.05,
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
-          backdropFilter: 'blur(20px)'
-        }}
-        layout
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 30
-        }}
+        className="flex items-center bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl p-1 border border-gray-200/50 dark:border-gray-700/50 shadow-lg"
+        whileHover={{ scale: 1.02 }}
+        transition={fastSpring}
+        style={{ willChange: 'transform' }}
       >
-        {themes.map(({ value, icon: Icon, label, color, shadowColor }) => (
-          <motion.button
-            key={value}
-            onClick={() => !isTransitioning && setTheme(value)}
-            disabled={isTransitioning}
-            className={`relative flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-400 ${
-              theme === value
-                ? 'text-white shadow-lg'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
-            } ${isTransitioning ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
-            whileHover={theme === value ? {} : { 
-              scale: 1.1,
-              backgroundColor: isDark ? 'rgba(55, 65, 81, 0.5)' : 'rgba(243, 244, 246, 0.5)'
-            }}
-            whileTap={{ scale: theme === value ? 1 : 0.95 }}
-            aria-label={`Switch to ${label} theme`}
-          >
-            <AnimatePresence mode="wait">
-              {theme === value && (
+        {themes.map(({ value, icon: Icon, label, gradient, shadow }) => {
+          const isActive = theme === value;
+          
+          return (
+            <motion.button
+              key={value}
+              onClick={() => handleThemeChange(value)}
+              disabled={isTransitioning}
+              className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors duration-200 ${
+                isActive
+                  ? 'text-white'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              whileHover={!isActive ? { scale: 1.05 } : {}}
+              whileTap={{ scale: 0.98 }}
+              transition={springConfig}
+              style={{ willChange: 'transform' }}
+              aria-label={`Switch to ${label} theme`}
+            >
+              {/* Active background indicator */}
+              <AnimatePresence mode="wait">
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTheme"
+                    className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-xl`}
+                    initial={false}
+                    animate={{ 
+                      scale: 1,
+                      opacity: 1
+                    }}
+                    transition={springConfig}
+                    style={{ 
+                      willChange: 'transform, opacity',
+                      boxShadow: `0 4px 12px ${shadow}`
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+              
+              {/* Icon */}
+              <motion.div
+                className="relative z-10"
+                animate={{ 
+                  scale: isActive ? 1.1 : 1,
+                  rotate: isActive ? 360 : 0
+                }}
+                transition={{
+                  scale: fastSpring,
+                  rotate: { 
+                    ...springConfig,
+                    duration: isActive ? 0.5 : 0.2
+                  }
+                }}
+                style={{ willChange: 'transform' }}
+              >
+                <Icon size={16} strokeWidth={2.5} />
+              </motion.div>
+
+              {/* Subtle glow for active state */}
+              {isActive && (
                 <motion.div
-                  layoutId="theme-indicator"
-                  className={`absolute inset-0 bg-gradient-to-r ${color} rounded-xl shadow-lg`}
-                  initial={{ scale: 0, opacity: 0, rotate: -180 }}
+                  className="absolute inset-0 rounded-xl opacity-30"
                   animate={{ 
-                    scale: 1, 
-                    opacity: 1, 
-                    rotate: 0,
-                    boxShadow: `0 8px 25px ${shadowColor}`
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.1, 0.3]
                   }}
-                  exit={{ scale: 0, opacity: 0, rotate: 180 }}
-                  transition={{ 
-                    type: "spring", 
-                    stiffness: 500, 
-                    damping: 25,
-                    duration: 0.4
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  style={{
+                    background: `radial-gradient(circle, ${shadow} 0%, transparent 70%)`,
+                    filter: 'blur(4px)',
+                    willChange: 'transform, opacity'
                   }}
                 />
               )}
-            </AnimatePresence>
-            
-            <motion.div
-              className="relative z-10"
-              animate={{ 
-                rotate: theme === value ? [0, 360] : 0,
-                scale: theme === value ? [1, 1.2, 1] : 1
-              }}
-              transition={{ 
-                duration: theme === value ? 0.6 : 0.3,
-                type: "spring",
-                stiffness: 300,
-                damping: 20
-              }}
-            >
-              <Icon size={18} />
-            </motion.div>
-
-            {/* Ultra smooth glow effect for active theme */}
-            {theme === value && (
-              <motion.div
-                className="absolute inset-0 rounded-xl"
-                initial={{ opacity: 0 }}
-                animate={{ 
-                  opacity: [0, 0.5, 0],
-                  scale: [1, 1.2, 1]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                style={{
-                  background: `radial-gradient(circle, ${shadowColor} 0%, transparent 70%)`,
-                  filter: 'blur(8px)'
-                }}
-              />
-            )}
-          </motion.button>
-        ))}
+            </motion.button>
+          );
+        })}
       </motion.div>
 
-      {/* Enhanced theme indicator tooltip */}
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 15, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 15, scale: 0.8 }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 25
-          }}
-          className="absolute top-full mt-3 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-gray-900/95 dark:bg-gray-100/95 text-white dark:text-gray-900 text-sm rounded-xl shadow-xl whitespace-nowrap pointer-events-none backdrop-blur-sm border border-gray-700 dark:border-gray-300"
+      {/* Simplified tooltip */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={fastSpring}
+        className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900/90 dark:bg-gray-100/90 text-white dark:text-gray-900 text-xs rounded-lg shadow-md whitespace-nowrap pointer-events-none backdrop-blur-sm"
+        style={{ willChange: 'transform, opacity' }}
+      >
+        <motion.span
+          key={theme}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
         >
-          <motion.span
-            key={theme}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {themes.find(t => t.value === theme)?.label} Mode
-            {isTransitioning && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="ml-2 text-xs opacity-70"
-              >
-                (switching...)
-              </motion.span>
-            )}
-          </motion.span>
-          <motion.div 
-            className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gray-900/95 dark:bg-gray-100/95 rotate-45 border-l border-t border-gray-700 dark:border-gray-300"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.1 }}
-          />
-        </motion.div>
-      </AnimatePresence>
+          {themes.find(t => t.value === theme)?.label} Mode
+        </motion.span>
+        
+        {/* Tooltip arrow */}
+        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900/90 dark:bg-gray-100/90 rotate-45" />
+      </motion.div>
 
-      {/* Ultra smooth transition overlay */}
+      {/* Minimal transition overlay */}
       <AnimatePresence>
         {isTransitioning && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 0.8 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-r from-pink-400/20 via-purple-400/20 to-cyan-400/20 rounded-2xl backdrop-blur-sm"
-            transition={{ duration: 0.3 }}
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-2xl"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-          </motion.div>
+            className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 rounded-2xl backdrop-blur-[1px]"
+            transition={{ duration: 0.2 }}
+            style={{ willChange: 'opacity' }}
+          />
         )}
       </AnimatePresence>
     </div>
   );
-};
+});
+
+ThemeToggle.displayName = 'ThemeToggle';
