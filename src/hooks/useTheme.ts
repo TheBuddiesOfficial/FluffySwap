@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -12,97 +12,131 @@ export const useTheme = () => {
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  // Debounced transition to prevent rapid changes
+  const debouncedTransition = useCallback((callback: () => void, delay: number = 100) => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    transitionTimeoutRef.current = setTimeout(callback, delay);
+  }, []);
+
+  // Optimized theme update with proper cleanup and smoother transitions
+  const updateTheme = useCallback(async () => {
+    if (isTransitioning) return; // Prevent overlapping transitions
+    
+    setIsTransitioning(true);
+    
     const root = window.document.documentElement;
     const body = window.document.body;
     
-    const updateTheme = async () => {
-      setIsTransitioning(true);
+    let newResolvedTheme: 'light' | 'dark';
+    
+    if (theme === 'system') {
+      newResolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } else {
+      newResolvedTheme = theme;
+    }
+    
+    // Early return if theme hasn't actually changed
+    if (newResolvedTheme === resolvedTheme && !isTransitioning) {
+      setIsTransitioning(false);
+      return;
+    }
+    
+    setResolvedTheme(newResolvedTheme);
+    
+    // Use CSS custom properties for ultra-smooth transitions
+    root.style.setProperty('--theme-transition-duration', '400ms');
+    root.style.setProperty('--theme-transition-timing', 'cubic-bezier(0.4, 0, 0.2, 1)');
+    
+    // Batch DOM operations to prevent layout thrashing
+    const updates = () => {
+      // Remove existing theme classes
+      root.classList.remove('light', 'dark', 'theme-transition');
+      body.classList.remove('light', 'dark', 'theme-transition');
       
-      let newResolvedTheme: 'light' | 'dark';
-      
-      if (theme === 'system') {
-        newResolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      } else {
-        newResolvedTheme = theme;
-      }
-      
-      setResolvedTheme(newResolvedTheme);
-      
-      // Enhanced transition preparation
-      root.style.setProperty('--theme-transition-duration', '0.6s');
-      root.style.setProperty('--theme-transition-timing', 'cubic-bezier(0.25, 0.46, 0.45, 0.94)');
-      
-      // Remove all theme classes with smooth transition
-      root.classList.remove('light', 'dark');
-      body.classList.remove('light', 'dark');
-      
-      // Add transition classes
+      // Add transition class first
       root.classList.add('theme-transition');
       body.classList.add('theme-transition');
       
-      // Small delay for smooth transition
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Add the new theme class
+      // Apply new theme
       root.classList.add(newResolvedTheme);
       body.classList.add(newResolvedTheme);
       
-      // Update meta theme-color with ultra smooth transition
+      // Update CSS custom properties based on theme
+      const properties = newResolvedTheme === 'dark' ? {
+        '--bg-primary': '#1f2937',
+        '--bg-secondary': '#374151',
+        '--bg-tertiary': '#4b5563',
+        '--text-primary': '#f9fafb',
+        '--text-secondary': '#d1d5db',
+        '--text-tertiary': '#9ca3af',
+        '--border-color': '#4b5563',
+        '--border-light': '#6b7280',
+        '--particle-opacity': '0.8',
+        '--glass-bg': 'rgba(0, 0, 0, 0.15)',
+        '--glass-border': 'rgba(255, 255, 255, 0.15)',
+        '--shadow-color': 'rgba(0, 0, 0, 0.3)',
+        '--theme-color': '#1f2937'
+      } : {
+        '--bg-primary': '#ffffff',
+        '--bg-secondary': '#f9fafb',
+        '--bg-tertiary': '#f3f4f6',
+        '--text-primary': '#111827',
+        '--text-secondary': '#6b7280',
+        '--text-tertiary': '#9ca3af',
+        '--border-color': '#e5e7eb',
+        '--border-light': '#f3f4f6',
+        '--particle-opacity': '0.6',
+        '--glass-bg': 'rgba(255, 255, 255, 0.15)',
+        '--glass-border': 'rgba(255, 255, 255, 0.3)',
+        '--shadow-color': 'rgba(0, 0, 0, 0.1)',
+        '--theme-color': '#ffffff'
+      };
+      
+      Object.entries(properties).forEach(([property, value]) => {
+        root.style.setProperty(property, value);
+      });
+      
+      // Update meta theme-color
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', newResolvedTheme === 'dark' ? '#1f2937' : '#ffffff');
+        metaThemeColor.setAttribute('content', properties['--theme-color']);
       }
-
-      // Enhanced CSS custom properties for ultra smooth theming
-      if (newResolvedTheme === 'dark') {
-        root.style.setProperty('--bg-primary', '#1f2937');
-        root.style.setProperty('--bg-secondary', '#374151');
-        root.style.setProperty('--bg-tertiary', '#4b5563');
-        root.style.setProperty('--text-primary', '#f9fafb');
-        root.style.setProperty('--text-secondary', '#d1d5db');
-        root.style.setProperty('--text-tertiary', '#9ca3af');
-        root.style.setProperty('--border-color', '#4b5563');
-        root.style.setProperty('--border-light', '#6b7280');
-        root.style.setProperty('--particle-opacity', '0.8');
-        root.style.setProperty('--glass-bg', 'rgba(0, 0, 0, 0.15)');
-        root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.15)');
-        root.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.3)');
-      } else {
-        root.style.setProperty('--bg-primary', '#ffffff');
-        root.style.setProperty('--bg-secondary', '#f9fafb');
-        root.style.setProperty('--bg-tertiary', '#f3f4f6');
-        root.style.setProperty('--text-primary', '#111827');
-        root.style.setProperty('--text-secondary', '#6b7280');
-        root.style.setProperty('--text-tertiary', '#9ca3af');
-        root.style.setProperty('--border-color', '#e5e7eb');
-        root.style.setProperty('--border-light', '#f3f4f6');
-        root.style.setProperty('--particle-opacity', '0.6');
-        root.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.15)');
-        root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.3)');
-        root.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.1)');
-      }
+    };
+    
+    // Use requestAnimationFrame for smoother DOM updates
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(() => {
+      updates();
       
-      // Enhanced body background with ultra smooth gradient animation
-      body.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      
-      // Complete transition
+      // Clean up transition classes after animation completes
       setTimeout(() => {
-        setIsTransitioning(false);
         root.classList.remove('theme-transition');
         body.classList.remove('theme-transition');
-      }, 600);
-    };
+        setIsTransitioning(false);
+      }, 400); // Match the CSS transition duration
+    });
+    
+  }, [theme, resolvedTheme, isTransitioning]);
 
-    updateTheme();
-    localStorage.setItem('theme', theme);
+  useEffect(() => {
+    debouncedTransition(() => {
+      updateTheme();
+      localStorage.setItem('theme', theme);
+    });
 
-    // Listen for system theme changes with smooth transitions
+    // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
       if (theme === 'system') {
-        updateTheme();
+        debouncedTransition(updateTheme, 50);
       }
     };
 
@@ -111,34 +145,21 @@ export const useTheme = () => {
     // Cleanup function
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [theme]);
+  }, [theme, updateTheme, debouncedTransition]);
 
-  // Ultra smooth theme setter with enhanced transition effects
-  const setThemeWithTransition = (newTheme: Theme) => {
-    if (isTransitioning) return; // Prevent rapid theme changes
-    
-    // Add ultra smooth transition effect
-    const body = document.body;
-    const root = document.documentElement;
-    
-    // Enhanced transition preparation
-    body.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    root.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  // Optimized theme setter with debouncing
+  const setThemeWithTransition = useCallback((newTheme: Theme) => {
+    if (isTransitioning || newTheme === theme) return;
     
     setTheme(newTheme);
-    
-    // Trigger ultra smooth animation to indicate theme change
-    setTimeout(() => {
-      body.style.transform = 'scale(1.002)';
-      root.style.filter = 'brightness(1.02)';
-      
-      setTimeout(() => {
-        body.style.transform = 'scale(1)';
-        root.style.filter = 'brightness(1)';
-      }, 200);
-    }, 100);
-  };
+  }, [theme, isTransitioning]);
 
   return {
     theme,
